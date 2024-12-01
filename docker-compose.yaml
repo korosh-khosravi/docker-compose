@@ -1,0 +1,75 @@
+services:
+
+
+    zabbix-frontend:
+        image:                    "zabbix/zabbix-web-apache-mysql:ubuntu-7.0.6"
+        container_name:           "zabbix-frontend-cont"
+        restart:                  "always"
+        depends_on:
+          -                       "zabbix-server"
+        networks:
+          -                       "zabbix-net"
+        environment:
+            ZBX_SERVER_HOST:      "${ZBX_SERVER_HOST}"
+            DB_SERVER_HOST:       "${DB_SERVER_HOST}"
+            MYSQL_USER:           "${MYSQL_USER}"
+            MYSQL_PASSWORD:       "${MYSQL_PASSWORD}"
+            MYSQL_ROOT_PASSWORD:  "${MYSQL_ROOT_PASSWORD}"
+            MYSQL_DATABASE:       "${MYSQL_DATABASE}"
+            PHP_TZ:               "${PHP_TZ}"
+        ports:
+          -                       "80:8080/tcp"
+          -                       "443:8443/tcp"
+
+
+    zabbix-server:
+        image:                    "zabbix/zabbix-server-mysql:7.0.6-ubuntu"
+        container_name:           "zabbix-server-cont"
+        restart:                  "always"
+        depends_on:
+          -                       "database"
+        networks:
+          -                       "zabbix-net"
+        environment:
+            DB_SERVER_HOST:       "${DB_SERVER_HOST}"
+            MYSQL_USER:           "${MYSQL_USER}"
+            MYSQL_PASSWORD:       "${MYSQL_PASSWORD}"
+            MYSQL_ROOT_PASSWORD:  "${MYSQL_ROOT_PASSWORD}"
+            MYSQL_DATABASE:       "${MYSQL_DATABASE}"
+        volumes:
+          -                       "zabbix-server-vol:/var/lib/zabbix"
+        deploy:
+            resources:
+                reservations:
+                    memory:       "128M"
+        
+
+    database:
+        image:                    "mysql:lts"
+        container_name:           "database-cont"
+        restart:                  "always"
+        networks:
+          - "zabbix-net"
+        volumes:
+          -                       "zabbix-database-vol:/var/lib/mysql"
+        environment:
+            MYSQL_USER:           "${MYSQL_USER}"
+            MYSQL_PASSWORD:       "${MYSQL_PASSWORD}"
+            MYSQL_ROOT_PASSWORD:  "${MYSQL_ROOT_PASSWORD}"
+            MYSQL_DATABASE:       "${MYSQL_DATABASE}"
+        deploy:
+            resources:
+                reservations:
+                    cpus:         "1"
+                    memory:       "1G"
+
+
+networks:
+    zabbix-net:
+        name:                     "zabbix-network"
+        driver:                   "bridge"
+
+
+volumes:
+    zabbix-server-vol:
+    zabbix-database-vol:
